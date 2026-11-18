@@ -7,7 +7,7 @@
   }
   var page = location.origin + path;
   var folder = location.origin + (location.pathname || "/").replace(/[^/]*$/, "");
-  var image = folder + "assets/og.jpg";
+  var image = folder + "img/fachada-letrero.jpg";
   var absoluto = function (value) {
     return /^https:\/\//i.test(value || "");
   };

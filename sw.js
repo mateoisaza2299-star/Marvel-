@@ -8,8 +8,7 @@ const SHELL = [
   "js/carga.js",
   "assets/fonts/cinzel-600.woff2",
   "assets/fonts/outfit-400.woff2",
-  "assets/logo/logo-256.webp",
-  "assets/img/fotos/interior-sala-blur.webp"
+  "img/fachada-letrero.jpg"
 ];
 
 const SHELL_SET = new Set(SHELL);

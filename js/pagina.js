@@ -12,12 +12,10 @@ import {
   esServicioVip,
   esAdicional,
   ordenarServicios,
-  reservasEnLinea,
   tituloPublico,
   descripcionPublica,
   textoHorarioPublico,
-  callePublica,
-  urlSitio
+  callePublica
 } from "./config.js?v=27";
 const textos = negocio.textos || {};
 const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -137,10 +135,10 @@ const aplicarEsquema = () => {
   const dias = Array.isArray(horario.dias) ? horario.dias : [];
   const data = {
     "@context": "https://schema.org",
-    "@type": "BarberShop",
+    "@type": "HairSalon",
     name: negocio.nombre,
-    image: urlSitio("assets/og.jpg"),
-    url: urlSitio(""),
+    image: "img/fachada-letrero.jpg",
+    url: "./",
     address: {
       "@type": "PostalAddress",
       streetAddress: callePublica(),
@@ -169,18 +167,18 @@ const aplicarEsquema = () => {
 const pintarTextos = () => {
   const titulo = tituloPublico();
   const descripcion = descripcionPublica();
-  const etiqueta = textos.heroEtiqueta || "La Mansion Barber Shop / Mosquera";
-  const lead = "Cortes, barba y cuidado personal en " + negocio.ciudad + ".";
+  const etiqueta = textos.heroEtiqueta || negocio.nombre;
+  const lead = textos.heroLead || negocio.eslogan || negocio.nombre;
   if (document.body.dataset.pagina !== "politica") {
-    document.title = document.body.dataset.pagina === "historia" ? "Nuestra historia | La Mansión Barber Shop" : titulo;
+    document.title = document.body.dataset.pagina === "historia" ? "Nuestra historia | " + negocio.nombre : titulo;
     pintarMeta('meta[name="description"]', descripcion);
     pintarMeta('meta[property="og:title"]', titulo);
     pintarMeta('meta[property="og:description"]', descripcion);
     pintarMeta('meta[name="twitter:title"]', titulo);
     pintarMeta('meta[name="twitter:description"]', descripcion);
   }
-  pintarMeta('meta[property="og:image:alt"]', "Letrero de neón de " + negocio.nombre + " en " + (negocio.zona || "") + ".");
-  pintarMeta('meta[name="twitter:image:alt"]', "Letrero de neón de " + negocio.nombre + " en " + (negocio.zona || "") + ".");
+  pintarMeta('meta[property="og:image:alt"]', "Letrero de " + negocio.nombre + ".");
+  pintarMeta('meta[name="twitter:image:alt"]', "Letrero de " + negocio.nombre + ".");
   document.querySelectorAll("[data-texto]").forEach((nodo) => {
     const clave = nodo.getAttribute("data-texto");
     if (clave === "heroEtiqueta") {
@@ -429,6 +427,11 @@ const srcsetCarta = (foto) => variantesDe(foto)
 
 const prepararHero = (fotos) => {
   const fondo = document.querySelector("[data-hero-fondo]");
+  if (fondo && fondo.querySelector("img")) {
+    const hero = document.querySelector(".hero");
+    if (hero) hero.classList.remove("is-partido");
+    return;
+  }
   const hero = document.querySelector(".hero");
   if (!fondo || !hero) return;
   const horizontales = fotos
@@ -578,42 +581,11 @@ const refrescarNosotros = (fotos) => {
   });
 };
 
-const DESCRIPCIONES_SERVICIO = {
-  "servicio vip": "La experiencia completa de La Mansión. Todos los servicios de la carta más mascarilla LED de siete colores. Dos horas y media para salir renovado de pies a cabeza.",
-  "corte basico": "Corte a tu medida con máquina y tijera, acabado limpio y definido. El clásico bien hecho.",
-  "corte + cejas": "Corte completo más diseño y limpieza de cejas para una mirada marcada y un acabado impecable.",
-  "corte + perfilada de barba": "Corte y barba en sintonía. Perfilado con navaja para líneas nítidas que enmarcan tu rostro.",
-  "corte basico + limpieza facial": "Tu corte más una limpieza facial que elimina impurezas y deja la piel fresca y renovada.",
-  "corte basico + ritual de barba": "Corte más ritual de barba: toalla caliente, aceites y perfilado. Barba suave, cuidada y con presencia.",
-  "corte + ritual de barba + limpieza facial": "El combo premium: corte, ritual de barba y limpieza facial. Cuidado completo de cabello, barba y piel.",
-  "perfilada de barba": "Diseño y definición de barba con navaja. Líneas precisas y acabado de barbería profesional.",
-  "ritual de barba": "Toalla caliente, aceites y perfilado para dejar la barba suave y con presencia. El ritual, de principio a fin.",
-  "depilada de nariz": "Depilación precisa de vello nasal, rápida y limpia. El detalle que deja el rostro impecable.",
-  "corte clasico": "Corte a tu medida con máquina y tijera, acabado limpio y definido. El clásico bien hecho.",
-  "degradado": "Degradado con transición limpia, de corto a largo. Líneas precisas y un acabado definido.",
-  "corte y barba": "Corte y barba en sintonía. Perfilado para líneas nítidas que enmarcan tu rostro.",
-  "arreglo de barba": "Perfil, forma y definición de la barba. Líneas precisas y acabado de barbería.",
-  "barba completa": "Diseño y limpieza de toda la barba. Presencia marcada y acabado cuidado.",
-  "disenos": "Líneas, figuras y freestyle sobre el corte. Un detalle con carácter y acabado nítido.",
-  "cuidado facial": "Limpieza y cuidado de la piel del rostro. La piel queda fresca y renovada."
-};
-
-const claveServicio = (nombre) => String(nombre || "")
-  .normalize("NFD")
-  .replace(/[\u0300-\u036f]/g, "")
-  .toLowerCase()
-  .replace(/\s+/g, " ")
-  .trim();
-
 const descripcionServicio = (servicio) => {
-  const propia = DESCRIPCIONES_SERVICIO[claveServicio(servicio && servicio.nombre)];
-  if (propia) return propia;
   const actual = String(servicio && servicio.descripcion || "").trim();
   if (actual && actual.toLowerCase() !== "por confirmar") return actual;
   const nombre = String(servicio && servicio.nombre || "").trim();
-  return nombre
-    ? nombre + ". Acabado de barbería, limpio y a tu medida."
-    : "Acabado de barbería, limpio y a tu medida.";
+  return nombre ? nombre + ". Cuidado del cabello, con acabado limpio." : "Cuidado del cabello, con acabado limpio.";
 };
 
 const servicioNodo = (servicio) => {
@@ -692,19 +664,7 @@ const slug = (valor) => valor.toLowerCase().normalize("NFD").replace(/[\u0300-\u
 
 const categoriaPublica = (nombre) => nombre && !["Niños", "Mujer", "Color"].includes(nombre);
 
-const cargarServiciosMenu = async () => {
-  if (!reservasEnLinea()) return null;
-  try {
-    const modulo = await import("./supabase.js?v=27");
-    const supabase = await modulo.obtenerSupabase();
-    if (!supabase) return null;
-    const { data, error } = await supabase.from("servicios").select("*").eq("activo", true).order("orden");
-    if (error || !Array.isArray(data)) return null;
-    return data.filter((item) => item && item.activo !== false);
-  } catch (error) {
-    return null;
-  }
-};
+const cargarServiciosMenu = async () => null;
 
 let serviciosTeclado = false;
 
@@ -773,33 +733,11 @@ const resumirHorario = (filas) => {
 };
 
 const pintarHorarioPublico = async () => {
-  if (!reservasEnLinea()) return;
-  try {
-    const modulo = await import("./supabase.js?v=27");
-    const supabase = await modulo.obtenerSupabase();
-    if (!supabase) return;
-    const { data, error } = await supabase.from("horario_local").select("dia,abre,cierra,activo").order("dia");
-    if (error || !Array.isArray(data) || !data.length) return;
-    const texto = resumirHorario(data);
-    if (texto) {
-      document.querySelectorAll("[data-horario]").forEach((nodo) => { nodo.textContent = texto; });
-      const faq = document.querySelector("[data-faq-a='3']");
-      if (faq) faq.textContent = texto;
-    }
-    const script = document.getElementById("schema-negocio");
-    if (!script) return;
-    let json = null;
-    try { json = JSON.parse(script.textContent); } catch (fallo) { json = null; }
-    if (!json) return;
-    const nombres = { 1: "Monday", 2: "Tuesday", 3: "Wednesday", 4: "Thursday", 5: "Friday", 6: "Saturday", 7: "Sunday" };
-    json.openingHoursSpecification = data.filter((fila) => fila.activo !== false && nombres[Number(fila.dia)]).map((fila) => ({
-      "@type": "OpeningHoursSpecification",
-      dayOfWeek: nombres[Number(fila.dia)],
-      opens: String(fila.abre).slice(0, 5),
-      closes: String(fila.cierra).slice(0, 5)
-    }));
-    script.textContent = JSON.stringify(json);
-  } catch (error) {}
+  const texto = textoHorarioPublico();
+  if (!texto) return;
+  document.querySelectorAll("[data-horario]").forEach((nodo) => { nodo.textContent = texto; });
+  const faq = document.querySelector("[data-faq-a='3']");
+  if (faq) faq.textContent = texto;
 };
 
 const fraseLocal = (categoria) => {
@@ -939,10 +877,10 @@ const prepararTira = () => {
   const pista = document.querySelector("[data-tira-pista]");
   const puntos = document.querySelector("[data-tira-puntos]");
   if (!tira || !pista || !puntos) return;
-  const rutas = [];
-  for (let i = 1; i <= 14; i += 1) {
-    rutas.push("img/carrusel/carrusel-" + String(i).padStart(2, "0") + ".webp");
-  }
+  const rutas = [
+    { src: "img/interior-led.jpg", alt: "Interior de Marvel Peluquería con sillas negras y espejos de luz azul." },
+    { src: "img/sala-espera.jpg", alt: "Sala de espera de Marvel Peluquería con banca roja, flores y espejo." }
+  ];
   const imagenes = [];
   const botones = [];
   let actual = 0;
@@ -979,12 +917,12 @@ const prepararTira = () => {
   };
   rutas.forEach((ruta, indice) => {
     const img = document.createElement("img");
-    img.alt = "Trabajo en La Mansion Barber Shop";
-    img.width = 900;
-    img.height = 1200;
+    img.alt = ruta.alt;
+    img.width = 1200;
+    img.height = 1600;
     img.decoding = "async";
-    img.loading = indice < 2 ? "eager" : "lazy";
-    img.dataset.ruta = ruta;
+    img.loading = "lazy";
+    img.dataset.ruta = ruta.src;
     img.setAttribute("aria-hidden", "true");
     img.addEventListener("error", () => {
       const pos = imagenes.indexOf(img);
@@ -1235,16 +1173,7 @@ const iniciar = async () => {
   prepararCarrusel();
   prepararTira();
   prepararMenu();
-  let fotos = [];
-  try {
-    const respuesta = await fetch(carpeta + "fotos.json", { credentials: "same-origin" });
-    if (respuesta.ok) {
-      const data = await respuesta.json();
-      if (Array.isArray(data)) fotos = data;
-    }
-  } catch (error) {
-    fotos = [];
-  }
+  const fotos = [];
   fotos.forEach(estilosFoto);
   reservarApariciones(fotos);
   refrescarNosotros(fotos);
@@ -1253,11 +1182,6 @@ const iniciar = async () => {
   prepararMapa();
   prepararMovimiento();
   engancharReservas();
-  if (document.querySelector("[data-trabajo]")) {
-    import("./trabajo.js?v=24").then((mod) => {
-      mod.prepararTrabajo({ fotos, puede, marcar, crearImagen, reducir: reduce });
-    }).catch(() => {});
-  }
   pintarHorarioPublico();
   prepararServicios().catch(() => {
     const aviso = document.querySelector("[data-carta-aviso]");
@@ -1265,11 +1189,6 @@ const iniciar = async () => {
     aviso.hidden = false;
     aviso.textContent = "No pudimos cargar el menú. Intenta de nuevo en un momento.";
   }).then(() => prepararLocal(fotos)).catch(() => {});
-  const registrarSW = () => {
-    if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js", { scope: "./" }).catch(() => {});
-  };
-  if ("requestIdleCallback" in window) window.requestIdleCallback(registrarSW, { timeout: 4000 });
-  else window.addEventListener("load", () => window.setTimeout(registrarSW, 1500));
 };
 
 const prepararMapa = () => {
@@ -1282,7 +1201,7 @@ const prepararMapa = () => {
     if (!src) return;
     marco.dataset.listo = "1";
     const iframe = document.createElement("iframe");
-    iframe.title = "Mapa de La Mansión Barber Shop";
+    iframe.title = "Mapa de " + negocio.nombre;
     iframe.loading = "lazy";
     iframe.referrerPolicy = "no-referrer-when-downgrade";
     iframe.setAttribute("sandbox", "allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox");

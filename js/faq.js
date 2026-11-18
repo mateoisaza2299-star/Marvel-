@@ -36,7 +36,7 @@ export const faq = [
   },
   {
     pregunta: "¿Tengo que pagar por adelantado?",
-    respuesta: "No. Pagas en la barbería al terminar."
+    respuesta: "No. Pagas en la peluquería al terminar."
   },
   {
     pregunta: "¿Qué pasa si llego tarde?",

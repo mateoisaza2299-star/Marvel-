@@ -1,4 +1,4 @@
 User-agent: *
 Disallow: /
 
-Sitemap: https://mateoisaza2299-star.github.io/La-mansion-barbers/sitemap.xml
+Sitemap: /sitemap.xml

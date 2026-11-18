@@ -1,11 +1,52 @@
-import { negocio, enlaceTelefono, enlaceDirecciones, formatPrecio, formatDuracion, esAdicional, ordenarServicios, reservasEnLinea } from "./config.js?v=27";
-import { obtenerSupabase } from "./supabase.js?v=27";
+import { negocio, enlaceTelefono, enlaceDirecciones, enlaceWhatsapp, formatPrecio, formatDuracion, esAdicional, ordenarServicios, horasDelDia, partesBogota } from "./config.js?v=27";
 import { traducir, celularValido, nombreValido } from "./errores.js";
 import { hoyISO, sumarDias, fechaLegible, fechaCorta, horaLegible, aMinutos, instanteBogota } from "./tiempo.js";
 import { nodo, hojaEstilos, marcaCasilla } from "./dom.js";
 
-const LLAVE = "lamansion_citas";
-const VISITA = "lamansion_visita";
+const AGENDA = "marvel-reservas";
+const LLAVE = "marvel-citas";
+const VISITA = "marvel-visita";
+
+function leerReservasGuardadas() {
+  try {
+    const data = JSON.parse(localStorage.getItem(AGENDA) || "[]");
+    return Array.isArray(data) ? data : [];
+  } catch (error) {
+    return [];
+  }
+}
+
+function horasOcupadas(fecha) {
+  return leerReservasGuardadas()
+    .filter((cita) => cita && cita.fecha === fecha && cita.hora)
+    .map((cita) => String(cita.hora).slice(0, 5));
+}
+
+function resumenWhatsapp(cita) {
+  return [
+    "Hola, quiero confirmar esta reserva en " + negocio.nombre + ":",
+    "Servicio: " + (cita.servicio || ""),
+    "Profesional: " + (cita.profesional || "Sin preferencia"),
+    "Día: " + fechaLegible(cita.fecha),
+    "Hora: " + horaLegible(cita.hora),
+    "Nombre: " + (cita.nombre || ""),
+    "Celular: " + (cita.telefono || ""),
+    cita.notas ? "Notas: " + cita.notas : ""
+  ].filter(Boolean).join("\n");
+}
+
+async function confirmarReserva(cita) {
+  const lista = leerReservasGuardadas();
+  const guardada = {
+    ...cita,
+    id: cita.id || (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()))
+  };
+  lista.push(guardada);
+  localStorage.setItem(AGENDA, JSON.stringify(lista));
+  const url = enlaceWhatsapp(resumenWhatsapp(guardada));
+  if (url) window.open(url, "_blank", "noopener,noreferrer");
+  return guardada;
+}
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const ESTADOS = {
   pendiente: "Pendiente de confirmación",
@@ -22,6 +63,8 @@ const estado = {
   paso: 0,
   sedeId: "",
   servicioId: "",
+  profesionalId: "",
+  profesionalNombre: "",
   fecha: "",
   hora: "",
   ofertas: new Map(),
@@ -30,7 +73,6 @@ const estado = {
   token: "",
   citas: new Map(),
   horarios: [],
-  supabase: null,
   lista: false,
   empujado: false,
   claveServicio: "",
@@ -74,12 +116,7 @@ function olvidarToken(token) {
   } catch (error) {}
 }
 
-async function registrar(tipo) {
-  try {
-    if (!estado.supabase) return;
-    await estado.supabase.rpc("registrar_evento", { p_tipo: tipo });
-  } catch (error) {}
-}
+async function registrar() {}
 
 function precioDe(servicio) {
   if (!servicio || servicio.precio == null || servicio.precio === "") return "";
@@ -117,11 +154,11 @@ function fijarSede() {
 }
 
 function pasos() {
-  return ["servicio", "horario", "datos"];
+  return ["servicio", "profesional", "dia", "hora", "datos"];
 }
 
 function nombrePaso(clave) {
-  return { servicio: "Servicio", horario: "Fecha y hora", datos: "Datos" }[clave] || clave;
+  return { servicio: "Servicio", profesional: "Profesional", dia: "Día", hora: "Hora", horario: "Fecha y hora", datos: "Datos" }[clave] || clave;
 }
 
 function agendaLista() {
@@ -269,7 +306,7 @@ function descargarIcs(fila) {
   const lineas = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//La Mansion Barber Shop//Citas//ES",
+    "PRODID:-//Marvel Peluquería//Citas//ES",
     "BEGIN:VTIMEZONE",
     "TZID:America/Bogota",
     "BEGIN:STANDARD",
@@ -280,7 +317,7 @@ function descargarIcs(fila) {
     "END:STANDARD",
     "END:VTIMEZONE",
     "BEGIN:VEVENT",
-    "UID:" + (fila.numero || "cita") + "@lamansion",
+    "UID:" + (fila.numero || "cita") + "@marvel",
     "DTSTART;TZID=America/Bogota:" + marca(inicio),
     "DTEND;TZID=America/Bogota:" + marca(fin),
     "SUMMARY:" + limpio((fila.servicio || "Cita") + " en " + negocio.nombre),
@@ -292,7 +329,7 @@ function descargarIcs(fila) {
   const url = URL.createObjectURL(blob);
   const enlace = nodo("a");
   enlace.href = url;
-  enlace.download = "cita-" + (fila.numero || "mansion") + ".ics";
+  enlace.download = "cita-" + (fila.numero || "marvel") + ".ics";
   document.body.appendChild(enlace);
   enlace.click();
   enlace.remove();
@@ -342,7 +379,7 @@ function pintarCita() {
   tarjeta.appendChild(nodo("p", "cita-numero", "Cita " + (fila.numero || "")));
   const detalle = nodo("p", "cita-detalle");
   const partesCita = [fila.servicio, fechaLegible(fila.fecha), horaLegible(fila.hora), negocio.direccion];
-  if (fila.barbero) partesCita.splice(1, 0, fila.barbero);
+  if (fila.profesional) partesCita.splice(1, 0, fila.profesional);
   detalle.textContent = partesCita.filter(Boolean).join(" · ");
   tarjeta.appendChild(detalle);
   const terminal = fila.estado === "completada" || fila.estado === "cancelada" || fila.estado === "no_asistio";
@@ -389,8 +426,9 @@ async function cancelarCita(token, boton) {
   if (!aceptar) return;
   boton.disabled = true;
   try {
-    const { error } = await estado.supabase.rpc("cancelar_reserva", { p_token: token });
-    if (error) throw error;
+    const lista = leerReservasGuardadas().filter((cita) => cita.id !== token);
+    localStorage.setItem(AGENDA, JSON.stringify(lista));
+    olvidarToken(token);
     await refrescarCitas();
   } catch (error) {
     const nota = document.querySelector("[data-cita-nota]");
@@ -418,26 +456,6 @@ function abrirReagendar(token, fila) {
 }
 
 async function refrescarCitas() {
-  const tokens = leerTokens();
-  if (!tokens.length || !estado.supabase) {
-    pintarCita();
-    return;
-  }
-  for (const token of tokens) {
-    try {
-      const { data, error } = await estado.supabase.rpc("estado_reserva", { p_token: token });
-      if (error || !data) {
-        estado.citas.delete(token);
-        continue;
-      }
-      const fila = Array.isArray(data) ? data[0] : data;
-      if (!fila || !fila.estado) {
-        estado.citas.delete(token);
-        continue;
-      }
-      estado.citas.set(token, fila);
-    } catch (error) {}
-  }
   pintarCita();
 }
 
@@ -479,10 +497,8 @@ function pintarFidelidad() {
     }
     boton.disabled = true;
     try {
-      const { data, error: falloRpc } = await estado.supabase.rpc("mi_fidelidad", { p_telefono: cel.digitos });
-      if (falloRpc) throw falloRpc;
-      const ficha = Array.isArray(data) ? data[0] : data;
-      pintarSellos(resultado, ficha);
+      error.hidden = false;
+      error.textContent = "La tarjeta no está disponible en esta beta.";
     } catch (fallo) {
       error.hidden = false;
       error.textContent = traducir(fallo);
@@ -554,7 +570,7 @@ function elegirServicio(servicio) {
   estado.servicioId = servicio.id;
   estado.hora = "";
   if (!estado.fecha) estado.fecha = hoyISO();
-  estado.paso = Math.max(0, pasos().indexOf("horario"));
+  estado.paso = Math.max(0, pasos().indexOf("servicio") + 1);
   pintarPasos();
   const titulo = pasosCaja() && pasosCaja().querySelector("[data-paso-titulo]");
   if (titulo) titulo.focus();
@@ -584,6 +600,9 @@ function pintarPasos() {
   const clave = estado.modo === "reagendar" ? "horario" : lista[estado.paso];
   cuerpo.replaceChildren();
   if (clave === "servicio") pintarServicios(cuerpo);
+  if (clave === "profesional") pintarProfesionales(cuerpo);
+  if (clave === "dia") pintarDia(cuerpo);
+  if (clave === "hora") pintarHora(cuerpo);
   if (clave === "horario") pintarHorario(cuerpo);
   if (clave === "datos") pintarDatos(cuerpo);
   const titulo = caja.querySelector("[data-paso-titulo]");
@@ -628,16 +647,13 @@ function pintarServicios(host) {
 }
 
 async function cargarHoras(fecha) {
-  const duracion = duracionElegida();
-  const { data, error } = await estado.supabase.rpc("horas_disponibles", {
-    p_fecha: fecha,
-    p_duracion: duracion
-  });
-  if (error) throw error;
+  const ocupadas = new Set(horasOcupadas(fecha));
+  const ahora = partesBogota(new Date());
   const mapa = new Map();
-  (Array.isArray(data) ? data : []).forEach((fila) => {
-    const slot = String(fila.slot || "").slice(0, 5);
-    if (slot) mapa.set(slot, true);
+  horasDelDia(fecha).forEach((slot) => {
+    if (ocupadas.has(slot)) return;
+    if (fecha === ahora.iso && aMinutos(slot) <= ahora.minutos) return;
+    mapa.set(slot, true);
   });
   return mapa;
 }
@@ -656,6 +672,128 @@ async function sugerirDia(desde) {
     }
   }
   return "";
+}
+
+function detalleElegido() {
+  const servicio = servicioActual();
+  const partes = [];
+  if (servicio) partes.push(servicio.nombre, formatDuracion(servicio.duracion_min), precioDe(servicio));
+  if (estado.profesionalNombre) partes.push(estado.profesionalNombre);
+  return partes.filter(Boolean).join(" · ");
+}
+
+function pintarProfesionales(host) {
+  const servicio = servicioActual();
+  if (servicio) host.appendChild(nodo("p", "reserva-elegido", detalleElegido()));
+  const lista = Array.isArray(negocio.profesionales) ? negocio.profesionales : [];
+  const opciones = nodo("div", "opciones opciones-servicios");
+  lista.forEach((profesional) => {
+    const id = String(profesional.id || profesional.nombre || "");
+    const nombre = String(profesional.nombre || "").trim();
+    if (!nombre) return;
+    const boton = nodo("button", "opcion opcion-servicio", "");
+    boton.type = "button";
+    boton.dataset.profesional = id;
+    boton.appendChild(nodo("strong", null, nombre));
+    boton.addEventListener("click", () => {
+      estado.profesionalId = id;
+      estado.profesionalNombre = nombre;
+      avanzar();
+    });
+    opciones.appendChild(boton);
+  });
+  if (!opciones.childElementCount) {
+    host.appendChild(nodo("p", null, "Aún no hay profesionales en la configuración. Puedes continuar sin preferencia."));
+    const seguir = nodo("button", "btn", "Continuar");
+    seguir.type = "button";
+    seguir.dataset.profesional = "";
+    seguir.addEventListener("click", () => {
+      estado.profesionalId = "";
+      estado.profesionalNombre = "";
+      avanzar();
+    });
+    host.appendChild(seguir);
+    return;
+  }
+  host.appendChild(opciones);
+}
+
+function tiraDias(alElegir) {
+  const maximo = Math.max(1, Number(estado.config && estado.config.dias_max) || 14);
+  const hoy = hoyISO();
+  if (!estado.fecha) estado.fecha = hoy;
+  const tira = nodo("div", "dias-tira");
+  tira.setAttribute("role", "listbox");
+  tira.setAttribute("aria-label", "Fechas");
+  const visibles = Math.min(estado.fechas, maximo);
+  for (let i = 0; i < visibles; i += 1) {
+    const fecha = sumarDias(hoy, i);
+    const boton = nodo("button", "dia-btn" + (fecha === estado.fecha ? " is-on" : ""), "");
+    boton.type = "button";
+    boton.dataset.dia = fecha;
+    if (fecha === hoy) boton.dataset.hoy = "1";
+    boton.setAttribute("aria-pressed", fecha === estado.fecha ? "true" : "false");
+    boton.append(nodo("span", "dia-nombre", fecha === hoy ? "Hoy" : fechaCorta(fecha).split(" ")[0]), nodo("span", "dia-numero", String(Number(fecha.slice(8)))));
+    boton.addEventListener("click", () => alElegir(fecha));
+    tira.appendChild(boton);
+  }
+  tira.addEventListener("keydown", (evento) => {
+    const botones = [...tira.querySelectorAll("[data-dia]")];
+    const indice = botones.indexOf(document.activeElement);
+    if (indice < 0) return;
+    if (evento.key === "ArrowRight" || evento.key === "ArrowLeft") {
+      evento.preventDefault();
+      const siguiente = botones[indice + (evento.key === "ArrowRight" ? 1 : -1)];
+      if (siguiente) siguiente.focus();
+    }
+  });
+  return { tira, visibles, maximo, hoy };
+}
+
+function pintarDia(host) {
+  const detalle = detalleElegido();
+  if (detalle) host.appendChild(nodo("p", "reserva-elegido", detalle));
+  const cambiar = nodo("button", "btn btn-sec", "Cambiar servicio");
+  cambiar.type = "button";
+  cambiar.addEventListener("click", () => {
+    estado.paso = 0;
+    estado.hora = "";
+    pintarPasos();
+  });
+  host.appendChild(cambiar);
+  const { tira, visibles, maximo } = tiraDias((fecha) => {
+    estado.fecha = fecha;
+    estado.hora = "";
+    avanzar();
+  });
+  host.appendChild(tira);
+  if (visibles < maximo) {
+    const mas = nodo("button", "btn btn-sec", "Ver más fechas");
+    mas.type = "button";
+    mas.dataset.masFechas = "1";
+    mas.addEventListener("click", () => {
+      estado.fechas = Math.min(maximo, estado.fechas + 14);
+      pintarPasos();
+    });
+    host.appendChild(mas);
+  }
+}
+
+function pintarHora(host) {
+  const detalle = detalleElegido();
+  if (detalle) host.appendChild(nodo("p", "reserva-elegido", detalle));
+  host.appendChild(nodo("p", "hora-duracion", fechaLegible(estado.fecha)));
+  const horas = nodo("div", "horas");
+  horas.dataset.horas = "1";
+  host.appendChild(horas);
+  esqueleto(horas, 4);
+  cargarHoras(estado.fecha).then((mapa) => {
+    estado.ofertas = mapa;
+    pintarHoras(horas, mapa);
+  }).catch(() => {
+    horas.removeAttribute("aria-busy");
+    horas.replaceChildren(nodo("p", null, "No pudimos cargar las horas. Intenta de nuevo."));
+  });
 }
 
 function pintarHorario(host) {
@@ -807,12 +945,8 @@ function elegirHora(slot) {
 async function guardarReagendo(boton) {
   boton.disabled = true;
   try {
-    const { error } = await estado.supabase.rpc("reagendar_reserva", {
-      p_token: estado.token,
-      p_fecha: estado.fecha,
-      p_hora: estado.hora
-    });
-    if (error) throw error;
+    const lista = leerReservasGuardadas().map((cita) => cita.id === estado.token ? { ...cita, fecha: estado.fecha, hora: estado.hora } : cita);
+    localStorage.setItem(AGENDA, JSON.stringify(lista));
     estado.modo = "";
     cerrarHoja();
     await refrescarCitas();
@@ -829,6 +963,7 @@ function resumenCita() {
   const caja = nodo("aside", "reserva-resumen");
   caja.appendChild(nodo("p", "etiqueta", "Tu cita"));
   caja.appendChild(nodo("p", null, servicio ? servicio.nombre : ""));
+  if (estado.profesionalNombre) caja.appendChild(nodo("p", null, estado.profesionalNombre));
   caja.appendChild(nodo("p", null, formatDuracion(duracionElegida())));
   caja.appendChild(nodo("p", null, fechaLegible(estado.fecha) + " · " + horaLegible(estado.hora)));
   const precio = precioDe(servicio);
@@ -968,23 +1103,22 @@ async function enviarReserva(evento, formulario, boton, error) {
   boton.disabled = true;
   boton.textContent = "Reservando…";
   try {
-    const payload = {
-      p_servicio: estado.servicioId,
-      p_fecha: estado.fecha,
-      p_hora: estado.hora,
-      p_nombre: nombre,
-      p_telefono: cel.digitos,
-      p_notas: String(datos.get("notas") || "").slice(0, 200),
-      p_autoriza: autoriza === true
-    };
-    const respuesta = await estado.supabase.rpc("crear_reserva", payload);
-    const data = respuesta.data;
-    const falloRpc = respuesta.error;
-    if (falloRpc) throw falloRpc;
-    const fila = Array.isArray(data) ? data[0] : data;
-    if (!fila || !fila.token) throw new Error("sin token");
+    const servicio = servicioActual();
+    const guardada = await confirmarReserva({
+      servicio: servicio ? servicio.nombre : "",
+      servicioId: estado.servicioId,
+      profesional: estado.profesionalNombre || "",
+      profesionalId: estado.profesionalId || "",
+      fecha: estado.fecha,
+      hora: estado.hora,
+      nombre,
+      telefono: cel.digitos,
+      notas: String(datos.get("notas") || "").slice(0, 200),
+      duracion_min: duracionElegida(),
+      precio: servicio ? servicio.precio : ""
+    });
+    const fila = { token: guardada.id, numero: String(leerReservasGuardadas().length).padStart(3, "0") };
     guardarToken(fila.token);
-    await refrescarCitas();
     pintarConfirmacion(fila, nombre);
   } catch (fallo) {
     error.hidden = false;
@@ -1026,7 +1160,7 @@ function pintarConfirmacion(creada, nombre) {
   const numero = nodo("p", "cita-numero", "Cita " + (creada.numero || fila.numero || ""));
   numero.dataset.reservaNumero = "1";
   const lineas = [numero, nodo("p", null, fila.servicio || "")];
-  if (fila.barbero) lineas.push(nodo("p", null, fila.barbero));
+  if (fila.profesional) lineas.push(nodo("p", null, fila.profesional));
   lineas.push(nodo("p", null, fechaLegible(fila.fecha) + " · " + horaLegible(fila.hora)), nodo("p", null, negocio.direccion));
   listo.append(...lineas);
   const acciones = nodo("div", "cita-acciones");
@@ -1102,14 +1236,11 @@ async function abrirPublico(clave, nombre) {
 
 async function reintentarCarga(boton) {
   if (boton) boton.disabled = true;
-  if (reservasEnLinea()) {
-    if (!estado.supabase) estado.supabase = await obtenerSupabase();
-    try {
-      await cargarCatalogo();
-      estado.lista = agendaLista();
-    } catch (error) {
-      estado.lista = false;
-    }
+  try {
+    await cargarCatalogo();
+    estado.lista = agendaLista();
+  } catch (error) {
+    estado.lista = false;
   }
   if (boton) boton.disabled = false;
   if (!estado.lista) {
@@ -1181,14 +1312,12 @@ function montarInterfaz() {
 }
 
 async function cargarCatalogo() {
-  const supabase = estado.supabase;
-  const [config, servicios] = await Promise.all([
-    supabase.from("config").select("*").eq("id", 1).limit(1),
-    supabase.from("servicios").select("*").order("orden")
-  ]);
-  if (config.error || servicios.error) throw new Error("carga");
-  estado.config = (config.data && config.data[0]) || null;
-  estado.servicios = servicios.data || [];
+  estado.config = { reservas_activas: true, dias_max: 14 };
+  estado.servicios = (negocio.servicios || []).map((item) => ({
+    ...item,
+    duracion_min: Number(item.duracion_min || item.duracion) || 60,
+    activo: item.activo !== false
+  }));
 }
 
 function leerPrecarga() {
@@ -1198,20 +1327,8 @@ function leerPrecarga() {
 }
 
 async function prepararCatalogo() {
-  if (!reservasEnLinea()) {
-    estado.lista = false;
-    return;
-  }
-  estado.supabase = await obtenerSupabase();
-  if (!estado.supabase) {
-    estado.lista = false;
-    return;
-  }
   try {
-    if (!sessionStorage.getItem(VISITA)) {
-      sessionStorage.setItem(VISITA, "1");
-      registrar("visita");
-    }
+    if (!sessionStorage.getItem(VISITA)) sessionStorage.setItem(VISITA, "1");
   } catch (error) {}
   try {
     await cargarCatalogo();
@@ -1219,15 +1336,6 @@ async function prepararCatalogo() {
   } catch (error) {
     estado.lista = false;
   }
-  if (!estado.lista) return;
-  pintarFidelidad();
-  await refrescarCitas();
-  window.setInterval(() => {
-    if (document.visibilityState === "visible") refrescarCitas();
-  }, 30000);
-  document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "visible") refrescarCitas();
-  });
 }
 
 export async function iniciarReservas() {
@@ -1240,11 +1348,6 @@ export async function iniciarReservas() {
       abrirPublico(reservar.getAttribute("data-servicio") || "", reservar.getAttribute("data-servicio-nombre") || "");
       return;
     }
-    const nodoClic = evento.target.closest("[data-wa], [data-wa-contacto], [data-tel], [data-maps]");
-    if (!nodoClic || !estado.supabase) return;
-    if (nodoClic.hasAttribute("data-wa") || nodoClic.hasAttribute("data-wa-contacto")) registrar("clic_whatsapp");
-    else if (nodoClic.hasAttribute("data-tel")) registrar("clic_llamar");
-    else registrar("clic_mapa");
   });
   window.addEventListener("popstate", () => {
     const caja = pasosCaja();

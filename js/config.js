@@ -1,117 +1,137 @@
-const NUMERO_WHATSAPP = "573118162854";
-const DIRECCION = "Carrera 3ra # 13-12, Local 18, Centro Comercial El Trébol, Mosquera";
+export const CONFIG = {
+  nombre: "Marvel Peluquería",
+  whatsapp: "570000000000",
+  instagram: "marvelpeluqueria",
+  direccion: "Tu dirección aquí",
+  horario: {
+    texto: "Lunes a sábado · 9:00 a. m. – 7:00 p. m.",
+    dias: [1, 2, 3, 4, 5, 6],
+    abre: "09:00",
+    cierra: "19:00"
+  },
+  servicios: [
+    { id: "cortes", nombre: "Cortes", descripcion: "Corte a tu medida, con tijera o máquina y un acabado limpio.", duracion: 45, precio: 35000 },
+    { id: "peinados", nombre: "Peinados", descripcion: "Volumen, ondas o recogido, pensado para la ocasión.", duracion: 60, precio: 45000 },
+    { id: "tintes", nombre: "Tintes", descripcion: "Color uniforme o con matices, cuidado de la raíz a las puntas.", duracion: 120, precio: 90000 },
+    { id: "barberia", nombre: "Barbería", descripcion: "Corte, barba y perfilado con líneas precisas.", duracion: 45, precio: 40000 },
+    { id: "tratamientos", nombre: "Tratamientos capilares", descripcion: "Hidratación y reparación para brillo y suavidad.", duracion: 50, precio: 55000 }
+  ],
+  profesionales: []
+};
 
 function telefonoVisible(numero) {
   const local = numero.startsWith("57") && numero.length === 12 ? numero.slice(2) : numero;
   return local.replace(/(\d{3})(\d{3})(\d{4})/, "$1 $2 $3");
 }
 
+const horario = CONFIG.horario && typeof CONFIG.horario === "object" ? CONFIG.horario : { texto: String(CONFIG.horario || ""), dias: [1, 2, 3, 4, 5, 6], abre: "09:00", cierra: "19:00" };
+
 export const negocio = {
-  nombre: "La Mansión Barber Shop",
-  nombreCorto: "La Mansión",
-  ciudad: "Mosquera, Cundinamarca",
-  eslogan: "La Mansion Barber Shop / Mosquera",
+  nombre: CONFIG.nombre,
+  nombreCorto: "Marvel",
+  ciudad: "",
+  eslogan: "Tu estilo, nuestra pasión",
   enPreparacion: false,
   indexable: false,
-  whatsapp: NUMERO_WHATSAPP,
-  telefono: telefonoVisible(NUMERO_WHATSAPP),
-  direccion: DIRECCION,
-  direccionCorta: DIRECCION,
-  instagram: "lamansionbarbers",
-  horario: { texto: "", dias: [], abre: "", cierra: "" },
-  mapaConsulta: "La Mansion Barber Shop, Carrera 3ra # 13-12 Local 18, Centro Comercial El Trébol, Mosquera",
+  whatsapp: CONFIG.whatsapp,
+  telefono: telefonoVisible(String(CONFIG.whatsapp || "")),
+  direccion: CONFIG.direccion,
+  direccionCorta: CONFIG.direccion,
+  instagram: CONFIG.instagram,
+  horario,
+  mapaConsulta: CONFIG.direccion,
   unaSede: true,
   mostrarWhatsappContacto: true,
-  mensajeWhatsApp: "Hola, quiero información sobre La Mansión Barber Shop.",
-  mensajeProductos: "Hola, quiero preguntar por los productos de La Mansión Barber Shop.",
-  supabase: { url: "https://bkzyaiamlhlbsggsoijk.supabase.co", key: "sb_publishable__BC2lWanJOLLb4gdVcEpKw_4SQO9w6A" },
-  sitio: "https://mateoisaza2299-star.github.io/La-mansion-barbers/",
+  mensajeWhatsApp: "Hola, quiero información sobre Marvel Peluquería.",
+  mensajeProductos: "Hola, quiero preguntar por el cuidado del cabello en Marvel Peluquería.",
+  sitio: "",
   email: "",
-  mapsUrl: "https://maps.app.goo.gl/iLy8KnMTvqikH2bQ6",
+  mapsUrl: "",
   mapaEmbed: "",
-  zona: "Mosquera",
-  horasAntesDeCerrar: 1,
+  zona: "",
+  horasAntesDeCerrar: 0,
   bloqueMinutos: 60,
   redes: { resenas: "" },
   precios: {},
   minutos: {},
+  profesionales: CONFIG.profesionales,
   politicaReserva: "Para cancelar o cambiar la cita, avisa con al menos 2 horas de anticipación por WhatsApp.",
-  avisoDatos: "Guardamos tu nombre, celular, servicio y fecha para agendar la cita. El celular también se usa para la tarjeta de fidelidad y el corte gratis. También usamos un identificador anónimo para estadísticas.",
+  avisoDatos: "Tu nombre, celular, servicio y fecha se guardan en este navegador para armar la cita y se envían por WhatsApp al confirmar.",
   privacidad: [
-    "Tratamos tu nombre, celular, servicio y fecha para agendar, recordar y confirmar o cancelar tu cita, y para escribirte por WhatsApp sobre esa cita. En la política de tratamiento de datos están tus derechos y el canal para pedir una corrección o la supresión."
+    "Tratamos tu nombre, celular, servicio y fecha para agendar la cita y escribirte por WhatsApp sobre ella. En la política de tratamiento de datos están tus derechos y el canal para pedir una corrección o la supresión."
   ],
   mensajeReserva: "",
   nosotros: {
-    etiqueta: "Nosotros · La Mansión",
-    titulo: "Aquí nadie sale igual que como entró",
-    intro: "En La Mansión creemos que un buen corte le cambia el día a cualquiera: al niño que se sienta por primera vez en la silla y al abuelo que lleva toda la vida con el mismo peinado. Cada uno llega con su historia. Nosotros ponemos las manos, la técnica y las ganas.",
+    etiqueta: "Nosotros · Marvel",
+    titulo: "Tu estilo, nuestra pasión",
+    intro: "En Marvel Peluquería cuidamos el cabello de mujeres y hombres con la misma atención: el corte, el color y el acabado se piensan para quien se sienta en la silla.",
     edadesTitulo: "Para todas las edades",
-    edades: ["Niños", "Jóvenes", "Adultos", "Mayores"],
+    edades: ["Mujeres", "Hombres", "Jóvenes", "Niños"],
     historias: [
       {
-        titulo: "La primera vez",
-        texto: "Los primeros cortes se hacen con calma, con risas y con papá al lado.",
-        alt: "En La Mansión le cortan el cabello a un niño pequeño sentado en las piernas de su papá."
+        titulo: "La sala",
+        texto: "Un espacio claro, con luz propia, para esperar con calma.",
+        alt: "Sala de espera de Marvel Peluquería con banca roja, flores y espejo con luz azul."
       },
       {
-        titulo: "El detalle que se nota",
-        texto: "Degradado limpio, brocha, tijera y pulso firme. Cada corte lleva nuestra firma.",
-        alt: "En La Mansión peinan con una brocha el cabello de un joven después de un corte degradado."
+        titulo: "El salón",
+        texto: "Sillas, espejos y luz de trabajo para un acabado cuidado.",
+        alt: "Interior de Marvel Peluquería con sillas negras y espejos iluminados."
       },
       {
-        titulo: "Un oficio que se comparte",
-        texto: "Aprendemos mirando, preguntando y practicando. Los que saben enseñan y los que llegan crecen.",
-        alt: "En La Mansión cortan con tijeras el cabello de un señor mayor mientras otro hombre observa."
+        titulo: "La marca",
+        texto: "Cortes, peinados, tintes, peluquería y tratamientos capilares.",
+        alt: "Pendón de Marvel Peluquería con los servicios del salón."
       }
     ],
     valoresTitulo: "Lo que nos mueve",
     valores: [
       { titulo: "Presentación impecable", texto: "Te recibimos como queremos que salgas." },
-      { titulo: "Técnica y experiencia", texto: "Práctica y oficio en cada corte." },
+      { titulo: "Técnica y experiencia", texto: "Práctica y oficio en cada servicio." },
       { titulo: "Compromiso", texto: "Tu tiempo importa y lo cumplimos." },
-      { titulo: "Actitud de servicio", texto: "Atención premium con trato de amigo." }
+      { titulo: "Actitud de servicio", texto: "Atención premium, de mujer y de hombre." }
     ],
-    cita: "Un buen corte no cambia solo tu cabello: cambia cómo entras a cualquier lugar.",
-    firma: "La Mansión Barber Shop",
+    cita: "Tu estilo, nuestra pasión.",
+    firma: "Marvel Peluquería",
     cierreTitulo: "Tu turno está listo",
     cierreReserva: "Reserva tu cita",
     cierreLlegar: "Cómo llegar",
     cifras: []
   },
-  servicios: [
-    { id: "corte-clasico", categoria: "Cortes", nombre: "Corte clásico", descripcion: "Tijera o máquina, con el acabado que pidas.", precio: null },
-    { id: "degradado", categoria: "Cortes", nombre: "Degradado", descripcion: "Transición limpia, de corto a largo.", precio: null },
-    { id: "corte-barba", categoria: "Cortes", nombre: "Corte y barba", descripcion: "El corte y el arreglo de barba en la misma visita.", precio: null },
-    { id: "arreglo-barba", categoria: "Barba", nombre: "Arreglo de barba", descripcion: "Perfil, forma y definición.", precio: null },
-    { id: "barba-completa", categoria: "Barba", nombre: "Barba completa", descripcion: "Diseño y limpieza de toda la barba.", precio: null },
-    { id: "disenos", categoria: "FreeStyle", nombre: "Diseños", descripcion: "Líneas, figuras y freestyle sobre el corte.", precio: null },
-    { id: "facial", categoria: "Cuidado facial", nombre: "Cuidado facial", descripcion: "Limpieza y cuidado de la piel del rostro.", precio: null }
-  ],
+  servicios: CONFIG.servicios.map((item, orden) => ({
+    id: item.id,
+    nombre: item.nombre,
+    descripcion: item.descripcion,
+    duracion_min: item.duracion,
+    precio: item.precio,
+    orden,
+    activo: true
+  })),
   preguntas: [
-    { pregunta: "¿Cómo agendo mi cita?", respuesta: "Desde esta página, en un minuto." },
-    { pregunta: "¿Atienden niños?", respuesta: "Sí. Los cortes de niños se hacen con calma." },
+    { pregunta: "¿Cómo agendo mi cita?", respuesta: "Desde esta página, en un minuto. Al confirmar, la cita se abre en WhatsApp." },
+    { pregunta: "¿Atienden mujeres y hombres?", respuesta: "Sí. Es una peluquería mixta: cortes, peinados, color, peluquería y tratamientos." },
     { pregunta: "¿Dónde están?", respuesta: "" },
     { pregunta: "¿Cuál es el horario?", respuesta: "" }
   ],
   textos: {
-    heroEtiqueta: "La Mansion Barber Shop / Mosquera",
-    heroAntes: "¡Los verdaderos ",
-    heroPalabra: "HOMBRES",
-    heroDespues: " van a la mansión!",
-    heroLead: "Cortes, barba y cuidado personal.",
+    heroEtiqueta: "Marvel Peluquería",
+    heroAntes: "Tu estilo, ",
+    heroPalabra: "nuestra pasión",
+    heroDespues: "",
+    heroLead: "Peluquería para mujer y hombre. Cortes, peinados, color y cuidado del cabello.",
     agenda: "Reserva tu cita",
     verServicios: "Ver servicios",
     datoAgenda: "Reserva en línea",
-    datoEdades: "Niños, jóvenes y adultos",
-    confianzaEdades: "Para todas las edades",
-    confianzaCortes: "Cortes, barba y cuidado facial",
-    confianzaProductos: "Productos de barbería",
+    datoEdades: "Mujer y hombre",
+    confianzaEdades: "Mujer y hombre",
+    confianzaCortes: "Cortes, color y tratamientos",
+    confianzaProductos: "Cuidado del cabello",
     serviciosTitulo: "Menú de servicios",
     consultar: "",
     serviciosNota: "",
-    productos: "Cuidado en casa: aceite de barba y productos de barbería",
+    productos: "Cuidado para llevar a casa",
     preguntaProductos: "Pregunta por WhatsApp",
-    pista: "Busca el letrero luminoso de La Mansión.",
+    pista: "Busca el letrero de Marvel Peluquería.",
     llegar: "Cómo llegar",
     llamar: "Llamar",
     reservasTitulo: "Reserva tu cita en línea",
@@ -229,15 +249,13 @@ export function handleInstagram() {
 }
 
 export function reservasEnLinea() {
-  if (negocio.enPreparacion) return false;
-  const caja = negocio.supabase || {};
-  return Boolean(String(caja.url || "").trim() && String(caja.key || "").trim());
+  return false;
 }
 
 export function enlaceWhatsapp(texto) {
   const numero = String(negocio.whatsapp || "").replace(/\D/g, "");
   if (!numero) return "";
-  const mensaje = texto || negocio.mensajeWhatsApp || "Hola, quiero información sobre La Mansión Barber Shop.";
+  const mensaje = texto || negocio.mensajeWhatsApp || "Hola, quiero información sobre Marvel Peluquería.";
   return `https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`;
 }
 
@@ -248,11 +266,11 @@ export function diaSemana(iso) {
 }
 
 export function tituloPublico() {
-  return negocio.nombre + " | Barbería en " + negocio.ciudad;
+  return negocio.nombre;
 }
 
 export function descripcionPublica() {
-  return negocio.nombre + ", barbería en " + negocio.ciudad + ". Cortes, barba y cuidado personal.";
+  return negocio.nombre + ". Peluquería para mujer y hombre. Tu estilo, nuestra pasión.";
 }
 
 export function textoHorarioPublico() {
