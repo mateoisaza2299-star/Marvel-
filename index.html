@@ -644,7 +644,6 @@ body:not(.admin-body) h3 {
 }
 
 .hero-datos li,
-.confianza li,
 .valor {
   display: flex;
   align-items: center;
@@ -656,36 +655,8 @@ body:not(.admin-body) h3 {
   font-size: 0.95rem;
 }
 
-.confianza {
-  border-block: 1px solid var(--linea);
-  background: var(--negro);
-}
-
-.confianza ul {
-  display: flex;
-  gap: 1rem;
-  margin: 0;
-  padding: 0.9rem 0;
-  overflow-x: auto;
-  list-style: none;
-  scroll-snap-type: x mandatory;
-}
-
 main section[id],
 .cita { scroll-margin-top: 92px; }
-
-.confianza li {
-  flex: 0 0 auto;
-  min-height: 44px;
-  scroll-snap-align: start;
-  color: var(--hueso);
-  font-family: var(--impacto);
-  font-size: 0.82rem;
-  font-weight: 500;
-  letter-spacing: 0.04em;
-  line-height: 1.35;
-  text-transform: uppercase;
-}
 
 .barra-movil {
   position: fixed;
@@ -782,13 +753,8 @@ html.motion .oro-palabra::after {
 html.motion .hero-anima .hero-slide.is-on img { animation: hero-zoom 7s linear forwards; }
 
 @media (min-width: 700px) {
-  .confianza ul { display: grid; grid-template-columns: 1fr 1fr; overflow: visible; }
   .hero-datos { grid-template-columns: repeat(3, max-content); gap: 1.2rem; }
   .valores-lista { grid-template-columns: 1fr 1fr; }
-}
-
-@media (min-width: 1000px) {
-  .confianza ul { grid-template-columns: repeat(4, 1fr); }
 }
 
 @media (min-width: 768px) {
@@ -874,10 +840,6 @@ html.motion .hero-anima .hero-slide.is-on img { animation: hero-zoom 7s linear f
   .visita-fondo.es-panel { inset: 0 0 0 42%; }
   .carta-movil { display: none; }
   .footer-grid { grid-template-columns: 1.1fr 1.4fr 0.8fr; align-items: start; }
-}
-
-@media (max-width: 699px) {
-  .confianza ul { padding: 0.35rem 0 0.45rem; }
 }
 
 @media (max-width: 899px) {
@@ -1024,15 +986,6 @@ html.motion .hero-anima .hero-slide.is-on img { animation: hero-zoom 7s linear f
       </div>
       </div>
     </section>
-
-    <div class="confianza">
-      <ul class="wrap">
-        <li><svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="2.4"/><path d="M6 19c.7-3 2.8-4.5 6-4.5S17.3 16 18 19"/></svg><span data-texto="confianzaEdades">Para todas las edades</span></li>
-        <li><svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 6.5h14v9H8l-3 2.5z"/></svg><span data-texto="datoAgenda">Reserva en línea</span></li>
-        <li><svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="7" r="2"/><circle cx="6" cy="17" r="2"/><path d="M8 8.2 19 17M8 15.8 19 7"/></svg><span data-texto="confianzaCortes">Cortes, color y tratamientos</span></li>
-        <li><svg class="icono" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 3h4v2l1 2a6 6 0 0 1 .8 3V20H8.2v-10a6 6 0 0 1 .8-3L10 5z"/></svg><span data-texto="confianzaProductos">Productos de peluquería</span></li>
-      </ul>
-    </div>
 
     <section class="seccion" id="nosotros" aria-labelledby="nosotros-titulo">
       <div class="wrap nosotros-compacto">
